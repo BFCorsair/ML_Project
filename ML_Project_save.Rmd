@@ -1,0 +1,135 @@
+---
+title: "Coursera Machine Learning - Project"
+author: "Bernard Fraenkel"
+date: "September 25, 2015"
+output: html_document
+keep_md: true
+---
+```{r setoptions, echo=FALSE}
+knitr::opts_chunk$set(echo=TRUE,warning=FALSE)
+```
+# Synopsis
+This report addresses two important questions related to storm data provided by the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database:
+
+1. Across the United States, which types of events are most harmful with respect to population health?
+
+2. Across the United States, which types of events have the greatest economic consequences?
+
+The raw data is available here: [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) [47Mb]
+
+
+# Data
+
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+## Loading libraries and data
+
+- Load libraries
+
+```{r}
+
+library(ggplot2)
+library(gridExtra)
+library(plyr) # Has to be before dplyr
+library(dplyr)
+library(reshape2)
+library(caret)
+```
+
+- Load the training and testing data sets
+
+```{r, cache=TRUE}
+training <- read.csv("pml-training.csv")
+testing <- read.csv("pml-testing.csv")
+```
+
+## Pre-processing
+We apply the following pre-processing steps to the data:
+
+- Removes all rows in the training sets that have NA values
+
+- A large number of columns in the testing set have all NAs. We consequently remove them from both training and testing set
+
+- We remove the first column "X" from both data sets (it is just an index)
+
+- Finally, we remove from both data sets columns of class "factor", which have only 1 level. In the process, we remove the last column, which is the outcome
+
+```{r}
+# Remove rows that have NA
+training_na <- training[complete.cases(training),]
+
+# A lot of columns in testing data set are 100% NA
+# -> remove them from both training and testing
+nb_test <- nrow(testing)
+all_na <-  which(apply(testing, 2, function(x) sum(is.na(x))==nb_test))
+testing2 <- testing[,-all_na]
+training2 <- training[,-all_na]
+
+# also remove the first column which is just an index
+testing2 <- testing2[,-1]
+training2 <- training2[,-1]
+
+# eliminate columns with factors with only 1 level
+# in either training or testing
+to_rm = c()
+# Exclude the last column which is different for train & test
+for (colmn in colnames(training2[,-ncol(training2)])) {
+	if (class(training2[,colmn]) == "factor") {
+		if ((nlevels(testing2[,colmn]) < 2) | (nlevels(training2[,colmn]) < 2)) {
+			col_nb <- grep(colmn,colnames(testing2)) # convert to column index
+			to_rm <- c(to_rm, col_nb) # add to list of "to remove"
+		}
+	}
+}
+training2 <- training2[,-to_rm]
+testing2 <- testing2[,-to_rm]
+```
+
+# Model Definition
+
+We use a generalized boosted tree regression model as implemented in the [gbm](https://cran.r-project.org/web/packages/gbm/gbm.pdf) package.
+
+
+```{r, cache=TRUE}
+fitControl <- trainControl(method = "repeatedcv", number = 10, repeats = 1)
+set.seed(4053)
+gbmFit <- train(classe ~ ., data = training2, method = "gbm",
+                 trControl = fitControl, verbose = FALSE)
+varImp(gbmFit)
+```
+
+```{r}
+trellis.par.set(caretTheme())
+plot(gbmFit, metric = "Accuracy") # or Kappa - little difference
+```
+
+# Cross validation and Expected out of sample error
+
+We are using k-fold cross validation with **K = 10**
+
+The expected out-of-sample error is given by the **Accuracy** or **Kapa** metrics below
+
+```{r}
+gbmFit
+```
+
+# Choices made
+
+- The GBM model was selected because it is high performance and relatively fast. It is robust and does not require scaling/normalization, and can handle a large number of independent variables
+
+- Previous experiments have shown that increasing the number of repeats does not improve the quality of the results, so we chose to only build the tree models 1. (Parameter *repeats = 1* in *trainControl*)
+
+# Prediction on test cases
+
+The prediction on the 20 test case samples are computed below
+
+```{r}
+results <- predict(gbmFit, newdata = testing)
+results
+```
+
+# Acknowledgment
+We are thankful to [Human Activity Recognition](http://groupware.les.inf.puc-rio.br/har) for providing the data for this project
