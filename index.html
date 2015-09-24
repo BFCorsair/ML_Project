@@ -31,12 +31,320 @@
         <hr>
 
         <section id="main_content">
-          <h1>
-<a id="ml_project" class="anchor" href="#ml_project" aria-hidden="true"><span class="octicon octicon-link"></span></a>ML_Project</h1>
+          <p>&lt;!DOCTYPE html&gt;</p>
 
-<p>Coursera Machine Learning Project</p>
+<p></p>
 
-<p>the Reports Page: <strong><a href="https://github.com/BFCorsair/ML_Project/blob/master/ML_Project.html">HERE</a></strong></p>
+<p></p>
+
+<p>
+
+</p>
+
+<p></p>
+
+<p></p>
+
+<p></p>Coursera Machine Learning - Project
+
+
+
+<p>
+</p>
+
+
+
+
+
+
+
+code{white-space: pre;}
+
+<p></p>
+
+
+
+
+  pre:not([class]) {
+    background-color: white;
+  }
+
+
+
+
+<p></p>
+
+<p></p>
+
+
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img { 
+  max-width:100%; 
+  height: auto; 
+}
+
+
+<div>
+
+
+<div id="header">
+<h1>
+<a id="coursera-machine-learning---project" class="anchor" href="#coursera-machine-learning---project" aria-hidden="true"><span class="octicon octicon-link"></span></a>Coursera Machine Learning - Project</h1>
+<h4>
+<a id="bernard-fraenkel" class="anchor" href="#bernard-fraenkel" aria-hidden="true"><span class="octicon octicon-link"></span></a><em>Bernard Fraenkel</em>
+</h4>
+<h4>
+<a id="september-25-2015" class="anchor" href="#september-25-2015" aria-hidden="true"><span class="octicon octicon-link"></span></a><em>September 25, 2015</em>
+</h4>
+</div>
+
+<div id="synopsis">
+<h1>
+<a id="synopsis" class="anchor" href="#synopsis" aria-hidden="true"><span class="octicon octicon-link"></span></a>Synopsis</h1>
+<p>This report addresses two important questions related to storm data provided by the U.S. National Oceanic and Atmospheric Administration’s (NOAA) storm database:</p>
+<ol>
+<li><p>Across the United States, which types of events are most harmful with respect to population health?</p></li>
+<li><p>Across the United States, which types of events have the greatest economic consequences?</p></li>
+</ol>
+<p>The raw data is available here: <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2">Storm Data</a> [47Mb]</p>
+</div>
+
+<div id="data">
+<h1>
+<a id="data" class="anchor" href="#data" aria-hidden="true"><span class="octicon octicon-link"></span></a>Data</h1>
+<p>The training data for this project are available here: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a></p>
+<p>The test data are available here: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a></p>
+<div id="loading-libraries-and-data">
+<h2>
+<a id="loading-libraries-and-data" class="anchor" href="#loading-libraries-and-data" aria-hidden="true"><span class="octicon octicon-link"></span></a>Loading libraries and data</h2>
+<ul>
+<li>Load libraries</li>
+</ul>
+<pre><code>library(ggplot2)
+library(gridExtra)
+library(plyr) # Has to be before dplyr
+library(dplyr)</code></pre>
+<pre><code>## 
+## Attaching package: 'dplyr'
+## 
+## The following objects are masked from 'package:plyr':
+## 
+##     arrange, count, desc, failwith, id, mutate, rename, summarise,
+##     summarize
+## 
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+## 
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre><code>library(reshape2)
+library(caret)</code></pre>
+<pre><code>## Loading required package: lattice</code></pre>
+<ul>
+<li>Load the training and testing data sets</li>
+</ul>
+<pre><code>training &lt;- read.csv("pml-training.csv")
+testing &lt;- read.csv("pml-testing.csv")</code></pre>
+</div>
+
+<div id="pre-processing">
+<h2>
+<a id="pre-processing" class="anchor" href="#pre-processing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Pre-processing</h2>
+<p>We apply the following pre-processing steps to the data:</p>
+<ul>
+<li><p>Removes all rows in the training sets that have NA values</p></li>
+<li><p>A large number of columns in the testing set have all NAs. We consequently remove them from both training and testing set</p></li>
+<li><p>We remove the first column “X” from both data sets (it is just an index)</p></li>
+<li><p>Finally, we remove from both data sets columns of class “factor”, which have only 1 level. In the process, we remove the last column, which is the outcome</p></li>
+</ul>
+<pre><code># Remove rows that have NA
+training_na &lt;- training[complete.cases(training),]
+
+# A lot of columns in testing data set are 100% NA
+# -&gt; remove them from both training and testing
+nb_test &lt;- nrow(testing)
+all_na &lt;-  which(apply(testing, 2, function(x) sum(is.na(x))==nb_test))
+testing2 &lt;- testing[,-all_na]
+training2 &lt;- training[,-all_na]
+
+# also remove the first column which is just an index
+testing2 &lt;- testing2[,-1]
+training2 &lt;- training2[,-1]
+
+# eliminate columns with factors with only 1 level
+# in either training or testing
+to_rm = c()
+# Exclude the last column which is different for train &amp; test
+for (colmn in colnames(training2[,-ncol(training2)])) {
+    if (class(training2[,colmn]) == "factor") {
+        if ((nlevels(testing2[,colmn]) &lt; 2) | (nlevels(training2[,colmn]) &lt; 2)) {
+            col_nb &lt;- grep(colmn,colnames(testing2)) # convert to column index
+            to_rm &lt;- c(to_rm, col_nb) # add to list of "to remove"
+        }
+    }
+}
+training2 &lt;- training2[,-to_rm]
+testing2 &lt;- testing2[,-to_rm]</code></pre>
+</div>
+
+<p></p>
+</div>
+
+<div id="model-definition">
+<h1>
+<a id="model-definition" class="anchor" href="#model-definition" aria-hidden="true"><span class="octicon octicon-link"></span></a>Model Definition</h1>
+<p>We use a generalized boosted tree regression model as implemented in the <a href="https://cran.r-project.org/web/packages/gbm/gbm.pdf">gbm</a> package.</p>
+<pre><code>fitControl &lt;- trainControl(method = "repeatedcv", number = 10, repeats = 1)
+set.seed(4053)
+gbmFit &lt;- train(classe ~ ., data = training2, method = "gbm",
+                 trControl = fitControl, verbose = FALSE)</code></pre>
+<pre><code>## Loading required package: gbm
+## Loading required package: survival
+## 
+## Attaching package: 'survival'
+## 
+## The following object is masked from 'package:caret':
+## 
+##     cluster
+## 
+## Loading required package: splines
+## Loading required package: parallel
+## Loaded gbm 2.1.1</code></pre>
+<pre><code>varImp(gbmFit)</code></pre>
+<pre><code>## gbm variable importance
+## 
+##   only 20 most important variables shown (out of 79)
+## 
+##                                Overall
+## raw_timestamp_part_1           100.000
+## roll_belt                       57.470
+## num_window                      28.890
+## pitch_forearm                   24.673
+## roll_forearm                    17.799
+## magnet_dumbbell_z               16.851
+## cvtd_timestamp28/11/2011 14:15  12.647
+## cvtd_timestamp30/11/2011 17:12  12.285
+## magnet_dumbbell_y               12.183
+## pitch_belt                      10.059
+## cvtd_timestamp02/12/2011 13:33   7.545
+## roll_dumbbell                    6.558
+## yaw_belt                         6.393
+## accel_forearm_x                  5.769
+## cvtd_timestamp02/12/2011 13:34   5.644
+## magnet_belt_z                    5.568
+## cvtd_timestamp02/12/2011 14:58   5.565
+## gyros_dumbbell_y                 5.456
+## gyros_belt_z                     4.747
+## accel_dumbbell_y                 4.591</code></pre>
+<pre><code>trellis.par.set(caretTheme())
+plot(gbmFit, metric = "Accuracy") # or Kappa - little difference</code></pre>
+<p><img title alt width="672"></p>
+</div>
+
+<div id="cross-validation-and-expected-out-of-sample-error">
+<h1>
+<a id="cross-validation-and-expected-out-of-sample-error" class="anchor" href="#cross-validation-and-expected-out-of-sample-error" aria-hidden="true"><span class="octicon octicon-link"></span></a>Cross validation and Expected out of sample error</h1>
+<p>We are using k-fold cross validation with <strong>K = 10</strong></p>
+<p>The expected out-of-sample error is given by the <strong>Accuracy</strong> or <strong>Kapa</strong> metrics below</p>
+<pre><code>gbmFit</code></pre>
+<pre><code>## Stochastic Gradient Boosting 
+## 
+## 19622 samples
+##    57 predictor
+##     5 classes: 'A', 'B', 'C', 'D', 'E' 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold, repeated 1 times) 
+## Summary of sample sizes: 17660, 17660, 17659, 17660, 17660, 17660, ... 
+## Resampling results across tuning parameters:
+## 
+##   interaction.depth  n.trees  Accuracy   Kappa      Accuracy SD
+##   1                   50      0.8369175  0.7929828  0.006419459
+##   1                  100      0.8993477  0.8725025  0.005850883
+##   1                  150      0.9273262  0.9079327  0.005191108
+##   2                   50      0.9565282  0.9449640  0.003182462
+##   2                  100      0.9869535  0.9834959  0.003970626
+##   2                  150      0.9918461  0.9896856  0.002821425
+##   3                   50      0.9845578  0.9804668  0.003391741
+##   3                  100      0.9940373  0.9924581  0.002366970
+##   3                  150      0.9970441  0.9962613  0.001826629
+##   Kappa SD   
+##   0.008108417
+##   0.007416011
+##   0.006580168
+##   0.004031933
+##   0.005026023
+##   0.003569968
+##   0.004291669
+##   0.002994165
+##   0.002310477
+## 
+## Tuning parameter 'shrinkage' was held constant at a value of 0.1
+## 
+## Tuning parameter 'n.minobsinnode' was held constant at a value of 10
+## Accuracy was used to select the optimal model using  the largest value.
+## The final values used for the model were n.trees = 150,
+##  interaction.depth = 3, shrinkage = 0.1 and n.minobsinnode = 10.</code></pre>
+</div>
+
+<div id="choices-made">
+<h1>
+<a id="choices-made" class="anchor" href="#choices-made" aria-hidden="true"><span class="octicon octicon-link"></span></a>Choices made</h1>
+<ul>
+<li><p>The GBM model was selected because it is high performance and relatively fast. It is robust and does not require scaling/normalization, and can handle a large number of independent variables</p></li>
+<li><p>Previous experiments have shown that increasing the number of repeats does not improve the quality of the results, so we chose to only build the tree models 1. (Parameter <em>repeats = 1</em> in <em>trainControl</em>)</p></li>
+</ul>
+</div>
+
+<div id="prediction-on-test-cases">
+<h1>
+<a id="prediction-on-test-cases" class="anchor" href="#prediction-on-test-cases" aria-hidden="true"><span class="octicon octicon-link"></span></a>Prediction on test cases</h1>
+<p>The prediction on the 20 test case samples are computed below</p>
+<pre><code>results &lt;- predict(gbmFit, newdata = testing)</code></pre>
+<pre><code>## Loading required package: gbm
+## Loading required package: survival
+## 
+## Attaching package: 'survival'
+## 
+## The following object is masked from 'package:caret':
+## 
+##     cluster
+## 
+## Loading required package: splines
+## Loading required package: parallel
+## Loaded gbm 2.1.1</code></pre>
+<pre><code>results</code></pre>
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E</code></pre>
+</div>
+
+<div id="acknowledgment">
+<h1>
+<a id="acknowledgment" class="anchor" href="#acknowledgment" aria-hidden="true"><span class="octicon octicon-link"></span></a>Acknowledgment</h1>
+<p>We are thankful to <a href="http://groupware.les.inf.puc-rio.br/har">Human Activity Recognition</a> for providing the data for this project</p>
+</div>
+
+<p></p>
+</div>
+
+
+
+
+
+
+
+<p>
+</p>
         </section>
 
         <footer>
