@@ -70,6 +70,8 @@ img {
 
 <div id="synopsis" class="section level1">
 <h1>Synopsis</h1>
+<p>The goal of this project is to determine <em>how well</em> participants in various training exercises perform these exercises data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from <a href="http://groupware.les.inf.puc-rio.br/har">this website</a> (see the section on the Weight Lifting Exercise Dataset).</p>
+<p>The report below shows are a model is created using the <a href="https://cran.r-project.org/web/packages/gbm/gbm.pdf">gbm</a> package using the training set, and computes the predictions on a 20-sample test set.</p>
 </div>
 <div id="data" class="section level1">
 <h1>Data</h1>
@@ -140,6 +142,18 @@ gbmFit &lt;- train(classe ~ ., data = training2, method = &quot;gbm&quot;,
                  trControl = fitControl, verbose = FALSE)</code></pre>
 <p>The variables driving the clustering are displayed below</p>
 <pre class="r"><code>varImp(gbmFit)</code></pre>
+<pre><code>## Loading required package: gbm
+## Loading required package: survival
+## 
+## Attaching package: 'survival'
+## 
+## The following object is masked from 'package:caret':
+## 
+##     cluster
+## 
+## Loading required package: splines
+## Loading required package: parallel
+## Loaded gbm 2.1.1</code></pre>
 <pre><code>## gbm variable importance
 ## 
 ##   only 20 most important variables shown (out of 79)
