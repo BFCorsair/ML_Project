@@ -9,14 +9,10 @@ keep_md: true
 knitr::opts_chunk$set(echo=TRUE,warning=FALSE)
 ```
 # Synopsis
-This report addresses two important questions related to storm data provided by the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database:
 
-1. Across the United States, which types of events are most harmful with respect to population health?
+The goal of this project is to determine *how well* participants in various training exercises perform these exercises data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from [this website](http://groupware.les.inf.puc-rio.br/har) (see the section on the Weight Lifting Exercise Dataset). 
 
-2. Across the United States, which types of events have the greatest economic consequences?
-
-The raw data is available here: [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) [47Mb]
-
+The report below shows are a model is created using the [gbm](https://cran.r-project.org/web/packages/gbm/gbm.pdf) package using the training set, and computes the predictions on a 20-sample test set.
 
 # Data
 
@@ -29,7 +25,7 @@ The test data are available here: https://d396qusza40orc.cloudfront.net/predmach
 
 - Load libraries
 
-```{r}
+```{r,results=FALSE,message=FALSE}
 
 library(ggplot2)
 library(gridExtra)
@@ -98,13 +94,14 @@ fitControl <- trainControl(method = "repeatedcv", number = 10, repeats = 1)
 set.seed(4053)
 gbmFit <- train(classe ~ ., data = training2, method = "gbm",
                  trControl = fitControl, verbose = FALSE)
+```
+
+The variables driving the clustering are displayed below
+
+```{r}
 varImp(gbmFit)
 ```
 
-```{r}
-trellis.par.set(caretTheme())
-plot(gbmFit, metric = "Accuracy") # or Kappa - little difference
-```
 
 # Cross validation and Expected out of sample error
 
@@ -114,6 +111,13 @@ The expected out-of-sample error is given by the **Accuracy** or **Kapa** metric
 
 ```{r}
 gbmFit
+```
+
+The accuracy of the model through cross-validation is displayed below, parametrized by tree-depth
+
+```{r}
+trellis.par.set(caretTheme())
+plot(gbmFit, metric = "Accuracy") # or Kappa - little difference
 ```
 
 # Choices made
